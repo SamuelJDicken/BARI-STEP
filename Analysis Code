@@ -1,0 +1,1954 @@
+#BARI-STEP Analysis Code
+
+#https://github.com/SamuelJDicken/BARI-STEP
+
+library(car)
+library(epiDisplay)
+library(rlang)
+library(writexl)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(haven)
+library(dvmisc)
+library(crosstable)
+library(gmodels)
+library(lubridate)
+library(lme4)
+library(nlme)
+library(parameters)
+library(lmerTest)
+library(emmeans)
+library(knitr)
+library(broom.mixed)
+library(mitml)
+library(ipw) 
+library(miceadds) 
+library(tidyr)
+library(riskdiff)
+library(geepack)
+library(sjPlot)
+library(ggplot2)
+library(performance)
+library(easystats)
+library(fmsb)
+library(epitools)
+library(riskdiff)
+library(logisticRR)
+library(logbin)
+library(sandwich)
+library(boot)
+
+####################
+####################
+###  #Analysis.  ###
+####################
+####################
+
+####################
+###   Table 1    ###
+####################
+
+#Age
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = ScreeningAge)) +
+  geom_histogram(bins = 11)
+ggplot(BARISTEP_database, aes(x=ScreeningAge))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(ScreeningAge), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Sex
+crosstable(BARISTEP_database, c(Sex), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#FamilyHistoryOfObesity
+crosstable(BARISTEP_database, c(FamilyHistoryOfObesity), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Weight (kg)
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = v2Weightkg)) +
+  geom_histogram(bins = 11)
+ggplot(BARISTEP_database, aes(x=v2Weightkg))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(v2Weightkg), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#BMI
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = v2Bmi)) +
+  geom_histogram(bins = 11)
+ggplot(BARISTEP_database, aes(x=v2Bmi))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(v2Bmi), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#BMI categorical
+BARISTEP_database$bmi_v2_cat <- 0
+BARISTEP_database$bmi_v2_cat[BARISTEP_database$v2Bmi >= 20] <- 1
+BARISTEP_database$bmi_v2_cat[BARISTEP_database$v2Bmi >= 30] <- 2
+BARISTEP_database$bmi_v2_cat[BARISTEP_database$v2Bmi >= 35] <- 3
+BARISTEP_database$bmi_v2_cat[BARISTEP_database$v2Bmi >= 40] <- 4
+BARISTEP_database$bmi_v2_cat <- as.factor(BARISTEP_database$bmi_v2_cat)
+crosstable(BARISTEP_database, c(bmi_v2_cat), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=1))
+
+#%WL since day of surgery to randomisation PercentageWeightLosssinceDOS
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = PercentageWeightLosssinceDOS)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=PercentageWeightLosssinceDOS))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+tab1(BARISTEP_database$PercentageWeightLosssinceDOS)
+crosstable(BARISTEP_database, c(PercentageWeightLosssinceDOS), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Ethnicity
+crosstable(BARISTEP_database, c(Ethnicity_coded), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Type of Metabolic Surgery
+tab1(BARISTEP_database$TypeOfSurgery)
+crosstable(BARISTEP_database, c(TypeOfSurgery), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Time (in months) since day of surgery
+BARISTEP_database$months_since_surgery <- interval(BARISTEP_database$DateofSurgery, BARISTEP_database$DateRandomisation) / months(1)
+
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = months_since_surgery)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database, aes(x=months_since_surgery))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(months_since_surgery), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Diabetes Status
+crosstable(BARISTEP_database, c(Diabetes), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#HbA1C
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = V2HbA1C)) +
+  geom_histogram(bins = 15)
+ggplot(BARISTEP_database, aes(x=V2HbA1C))+
+  geom_histogram(color="black", fill="white", bins = 6)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(V2HbA1C), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Change in meal-stimulated GLP-1
+BARISTEP_database$GLP1_baselinechange <- (BARISTEP_database$`GLP1-0Minutes` - BARISTEP_database$`GLP1-30minutes`)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = GLP1_baselinechange)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = GLP1_baselinechange)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=GLP1_baselinechange))+
+  geom_histogram(color="black", fill="white", bins = 6)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(GLP1_baselinechange), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+####################
+###   Table 2    ###
+####################
+
+#<10% WL ITT
+BARISTEP_database_ITT$PctWL_week68_Below10 <- 0
+BARISTEP_database_ITT$PctWL_week68_Below10[BARISTEP_database_ITT$PctWL_week68 < 10] <- 1
+crosstable(BARISTEP_database_ITT, c(PctWL_week68), by =PctWL_week68_Below10, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=2))
+crosstable(BARISTEP_database_ITT, c(PctWL_week68_Below10), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=2))
+
+chisq.test(BARISTEP_database_ITT$PctWL_week68_Below10,  BARISTEP_database_ITT$Treatment_allocation)
+
+riskdifference(5, 27, 34, 29, CRC=TRUE)
+
+#>=10% WL ITT
+BARISTEP_database_ITT$PctWL_week68_Over10 <- 0
+BARISTEP_database_ITT$PctWL_week68_Over10[BARISTEP_database_ITT$PctWL_week68 >= 10] <- 1
+crosstable(BARISTEP_database_ITT, c(PctWL_week68), by =PctWL_week68_Over10, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=2))
+crosstable(BARISTEP_database_ITT, c(PctWL_week68_Over10), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=2))
+
+riskdifference(29, 2, 34, 29, CRC=TRUE)
+
+chisq.test(BARISTEP_database_ITT$PctWL_week68_Over10,  BARISTEP_database_ITT$Treatment_allocation)
+
+#>=15% WL ITT
+BARISTEP_database_ITT$PctWL_week68_Over15 <- 0
+BARISTEP_database_ITT$PctWL_week68_Over15[BARISTEP_database_ITT$PctWL_week68 >= 15] <- 1
+crosstable(BARISTEP_database_ITT, c(PctWL_week68), by =PctWL_week68_Over15, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=2))
+crosstable(BARISTEP_database_ITT, c(PctWL_week68_Over15), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=2))
+
+riskdifference(21, 2, 34, 29, CRC=TRUE)
+
+chisq.test(BARISTEP_database_ITT$PctWL_week68_Over15,  BARISTEP_database_ITT$Treatment_allocation)
+
+#>=20% WL ITT
+BARISTEP_database_ITT$PctWL_week68_Over20 <- 0
+BARISTEP_database_ITT$PctWL_week68_Over20[BARISTEP_database_ITT$PctWL_week68 >= 20] <- 1
+crosstable(BARISTEP_database_ITT, c(PctWL_week68), by =PctWL_week68_Over20, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=2))
+crosstable(BARISTEP_database_ITT, c(PctWL_week68_Over20), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=2))
+
+riskdifference(16, 1, 34, 29, CRC=TRUE)
+
+chisq.test(BARISTEP_database_ITT$PctWL_week68_Over20,  BARISTEP_database_ITT$Treatment_allocation)
+
+
+###########################
+###   Primary Outcome   ###
+###########################
+BARISTEP_database$PctWL_week68 <- ((BARISTEP_database$v2Weightkg - BARISTEP_database$v24WeightKG)/BARISTEP_database$v2Weightkg) *100
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = PctWL_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = PctWL_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=PctWL_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+summary(BARISTEP_database$PctWL_week68)
+crosstable(BARISTEP_database, c(PctWL_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=2))
+
+BARISTEP_database$ITT <- 0
+BARISTEP_database$ITT[!is.na(BARISTEP_database$PctWL_week68)] <- 1
+tab1(BARISTEP_database$ITT)
+BARISTEP_database_ITT <- BARISTEP_database %>%
+  filter(ITT == 1)
+View(BARISTEP_database_ITT)
+
+lm.BARI.Weight.1 <- lm(PctWL_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg, data = BARISTEP_database_ITT)
+plot(lm.BARI.Weight.1)
+summary(lm.BARI.Weight.1)
+lsmeans(lm.BARI.Weight.1, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.Weight.1, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+
+####################
+###   Table 3    ###
+####################
+
+#Total Body Weight
+BARISTEP_database$Weightchange_week68 <- (BARISTEP_database$v2Weightkg - BARISTEP_database$v24WeightKG)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = Weightchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = Weightchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=Weightchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 5)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.Weight.ITT <- lm(Weightchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg, data = BARISTEP_database)
+summary(lm.BARI.Weight.ITT)
+plot(lm.BARI.Weight.ITT)
+rms::vif(lm.BARI.Weight.ITT)
+emmeans(lm.BARI.Weight.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.Weight.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.Weight.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#BMI
+BARISTEP_database$BMIchange_week68 <- (BARISTEP_database$v2Bmi - BARISTEP_database$v24Bmi)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = BMIchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = BMIchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=BMIchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.BMI.ITT <- lm(BMIchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2Bmi, data = BARISTEP_database)
+summary(lm.BARI.BMI.ITT)
+plot(lm.BARI.BMI.ITT)
+rms::vif(lm.BARI.BMI.ITT)
+emmeans(lm.BARI.BMI.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.BMI.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.BMI.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#Fat mass
+BARISTEP_database$FatMasschange_week68 <- (BARISTEP_database$v2FatMassKg - BARISTEP_database$v24FatMassKg)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = FatMasschange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = FatMasschange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=FatMasschange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.FatMass.ITT <- lm(FatMasschange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2FatMassKg, data = BARISTEP_database)
+summary(lm.BARI.FatMass.ITT)
+plot(lm.BARI.FatMass.ITT)
+rms::vif(lm.BARI.FatMass.ITT)
+emmeans(lm.BARI.FatMass.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.FatMass.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.FatMass.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#Muscle mass (%)
+BARISTEP_database$MMpct_V2 <- ((BARISTEP_database$V2MuscleMassKg / BARISTEP_database$v2Weightkg) * 100)
+BARISTEP_database$MMpct_V24 <- ((BARISTEP_database$v24MuscleMassKg / BARISTEP_database$v24WeightKG) * 100)
+BARISTEP_database$MMpctchange_week68 <- (BARISTEP_database$MMpct_V2 - BARISTEP_database$MMpct_V24)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = MMpctchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = MMpctchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=MMpctchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.MMpct.ITT <- lm(MMpctchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + MMpct_V2, data = BARISTEP_database)
+summary(lm.BARI.MMpct.ITT)
+plot(lm.BARI.MMpct.ITT)
+rms::vif(lm.BARI.MMpct.ITT)
+emmeans(lm.BARI.MMpct.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.MMpct.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.MMpct.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#Muscle mass (kg)
+BARISTEP_database$MMchange_week68 <- (BARISTEP_database$V2MuscleMassKg - BARISTEP_database$v24MuscleMassKg)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = MMchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = MMchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=MMchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.MM.ITT <- lm(MMchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + V2MuscleMassKg, data = BARISTEP_database)
+summary(lm.BARI.MM.ITT)
+plot(lm.BARI.MM.ITT)
+rms::vif(lm.BARI.MM.ITT)
+emmeans(lm.BARI.MM.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.MM.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.MM.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#HbA1c
+BARISTEP_database$HbA1cchange_week68 <- (BARISTEP_database$V2HbA1C - BARISTEP_database$V24HbA1C)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = HbA1cchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = HbA1cchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=HbA1cchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.HbA1c.ITT <- lm(HbA1cchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + V2HbA1C, data = BARISTEP_database)
+summary(lm.BARI.HbA1c.ITT)
+plot(lm.BARI.HbA1c.ITT)
+rms::vif(lm.BARI.HbA1c.ITT)
+emmeans(lm.BARI.HbA1c.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.HbA1c.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.HbA1c.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#Heart rate
+BARISTEP_database$HRchange_week68 <- (BARISTEP_database$v2HeartRate - BARISTEP_database$v24HeartRate)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = HRchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = HRchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=HRchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.HR.ITT <- lm(HRchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2HeartRate, data = BARISTEP_database)
+summary(lm.BARI.HR.ITT)
+plot(lm.BARI.HR.ITT)
+rms::vif(lm.BARI.HR.ITT)
+emmeans(lm.BARI.HR.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.HR.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.HR.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#SBP
+BARISTEP_database$SBPchange_week68 <- (BARISTEP_database$v2SystolicBloodPressure - BARISTEP_database$v24SystolicBloodPressure)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = SBPchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = SBPchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=SBPchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.SBP.ITT <- lm(SBPchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2SystolicBloodPressure, data = BARISTEP_database)
+summary(lm.BARI.SBP.ITT)
+plot(lm.BARI.SBP.ITT)
+rms::vif(lm.BARI.SBP.ITT)
+emmeans(lm.BARI.SBP.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.SBP.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.SBP.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#DBP
+BARISTEP_database$DBPchange_week68 <- (BARISTEP_database$v2DiastolicBloodPressure - BARISTEP_database$v24DiastolicBloodPressure)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = DBPchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = DBPchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=DBPchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+lm.BARI.DBP.ITT <- lm(SBPchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2DiastolicBloodPressure, data = BARISTEP_database)
+summary(lm.BARI.DBP.ITT)
+plot(lm.BARI.DBP.ITT)
+rms::vif(lm.BARI.DBP.ITT)
+emmeans(lm.BARI.DBP.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.DBP.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.DBP.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#Total Cholesterol
+BARISTEP_database_ITT$Cholesterolchange_week68 <- (BARISTEP_database_ITT$Cholesterol_Baseline - BARISTEP_database_ITT$Cholesterol_V24)
+summary(BARISTEP_database_ITT$Cholesterolchange_week68)
+
+lm.BARI.Cholesterolchange.ITT <- lm(Cholesterolchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + Cholesterol_Baseline, data = BARISTEP_database_ITT)
+summary(lm.BARI.Cholesterolchange.ITT)
+plot(lm.BARI.Cholesterolchange.ITT)
+rms::vif(lm.BARI.Cholesterolchange.ITT)
+emmeans(lm.BARI.Cholesterolchange.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.Cholesterolchange.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.Cholesterolchange.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#Triglycerides
+BARISTEP_database_ITT$Triglycerideschange_week68 <- (BARISTEP_database_ITT$Triglycerides_Baseline - BARISTEP_database_ITT$Triglycerides_V24)
+summary(BARISTEP_database_ITT$Triglycerideschange_week68)
+
+lm.BARI.Triglycerideschange.ITT <- lm(Triglycerideschange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + Triglycerides_Baseline, data = BARISTEP_database_ITT)
+summary(lm.BARI.Triglycerideschange.ITT)
+plot(lm.BARI.Triglycerideschange.ITT)
+rms::vif(lm.BARI.Triglycerideschange.ITT)
+emmeans(lm.BARI.Triglycerideschange.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.Triglycerideschange.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.Triglycerideschange.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#HsCRP
+BARISTEP_database_ITT$HsCrpchange_week68 <- (BARISTEP_database_ITT$HsCrp_Baseline - BARISTEP_database_ITT$HsCrp_V24)
+summary(BARISTEP_database_ITT$HsCrpchange_week68)
+
+lm.BARI.HsCrpchange.ITT <- lm(HsCrpchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + HsCrp_Baseline, data = BARISTEP_database_ITT)
+summary(lm.BARI.HsCrpchange.ITT)
+plot(lm.BARI.HsCrpchange.ITT)
+rms::vif(lm.BARI.HsCrpchange.ITT)
+emmeans(lm.BARI.HsCrpchange.ITT, "Treatment_allocation")
+lsmeans(lm.BARI.HsCrpchange.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.HsCrpchange.ITT, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#IWQoL-Lite
+BARISTEP_IWQoL_MODEL_All_Changes_for_models <- read_excel("BARISTEP_IWQoL_MODEL_All_Changes_for_models_13Oct25.xlsx")
+View(BARISTEP_IWQoL_MODEL_All_Changes_for_models)
+
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 <- BARISTEP_IWQoL_MODEL_All_Changes_for_models %>%
+  filter(visit_numeric == 24)
+View(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24)
+
+#iwqol_lite_physical_function_average_transformed
+BARISTEP.IWQOLpf.V24 <- lm(iwqol_lite_physical_function_average_transformed_change ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_physical_function_average_transformed,
+                           data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24)
+summary(BARISTEP.IWQOLpf.V24)
+plot(BARISTEP.IWQOLpf.V24)
+rms::vif(BARISTEP.IWQOLpf.V24)
+lsmeans(BARISTEP.IWQOLpf.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLpf.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_self_esteem_average_transformed
+BARISTEP.IWQOLse.V24 <- lm(iwqol_lite_self_esteem_average_transformed_change ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_self_esteem_average_transformed,
+                           data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24)
+summary(BARISTEP.IWQOLse.V24)
+plot(BARISTEP.IWQOLse.V24)
+rms::vif(BARISTEP.IWQOLse.V24)
+lsmeans(BARISTEP.IWQOLse.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLse.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_sexual_life_total_average_transformed
+BARISTEP.IWQOLsl.V24 <- lm(iwqol_lite_sexual_life_total_average_transformed_change ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_sexual_life_total_average_transformed,
+                           data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24)
+summary(BARISTEP.IWQOLsl.V24)
+plot(BARISTEP.IWQOLsl.V24)
+rms::vif(BARISTEP.IWQOLsl.V24)
+lsmeans(BARISTEP.IWQOLsl.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLsl.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_public_distress_total_average_transformed
+BARISTEP.IWQOLpd.V24 <- lm(iwqol_lite_public_distress_total_average_transformed_change ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_public_distress_total_average_transformed,
+                           data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24)
+summary(BARISTEP.IWQOLpd.V24)
+plot(BARISTEP.IWQOLpd.V24)
+rms::vif(BARISTEP.IWQOLpd.V24)
+lsmeans(BARISTEP.IWQOLpd.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLpd.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_work_total_average_transformed
+BARISTEP.IWQOLwork.V24 <- lm(iwqol_lite_work_total_average_transformed_change ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_work_total_average_transformed,
+                             data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24)
+summary(BARISTEP.IWQOLwork.V24)
+plot(BARISTEP.IWQOLwork.V24)
+rms::vif(BARISTEP.IWQOLwork.V24)
+lsmeans(BARISTEP.IWQOLwork.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLwork.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_total_score_average_transformed
+BARISTEP.IWQOLtotal.V24 <- lm(iwqol_lite_total_score_average_transformed_change ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_total_score_average_transformed,
+                              data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24)
+summary(BARISTEP.IWQOLtotal.V24)
+plot(BARISTEP.IWQOLtotal.V24)
+rms::vif(BARISTEP.IWQOLtotal.V24)
+lsmeans(BARISTEP.IWQOLtotal.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLtotal.V24, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+
+####################
+###   Table 4    ###
+#################### 
+
+##AEs
+
+#Add AE/SAE data
+BARI_STEP_AE_SAE_0_or_1_Counts <- read_excel("BARI-STEP AEsSAEs Allocated 0 or 1 Counts Specific_SAEs.xlsx")
+View(BARI_STEP_AE_SAE_0_or_1_Counts)
+
+#Abdominal_bloating	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Abdominal_bloating)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Abdominal_bloating), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Abdominal_bloating <- glm(Abdominal_bloating ~ treatment_allocation,
+                             data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                             family = binomial(link = "log"))
+tidy(rr_Abdominal_bloating, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Abdominal_pain	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Abdominal_pain)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Abdominal_pain), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Abdominal_pain <- glm(Abdominal_pain ~ treatment_allocation,
+                         data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                         family = binomial(link = "log"))
+tidy(rr_Abdominal_pain, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Arthralgia	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Arthralgia)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Arthralgia), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Arthralgia <- glm(Arthralgia ~ treatment_allocation,
+                     data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                     family = binomial(link = "log"))
+tidy(rr_Arthralgia, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Back_pain	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Back_pain)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Back_pain), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Back_pain <- glm(Back_pain ~ treatment_allocation,
+                    data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                    family = binomial(link = "log"))
+tidy(rr_Back_pain, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Cellulitis	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Cellulitis)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Cellulitis), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+
+#Chest_pain	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Chest_pain)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Chest_pain), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Chest_pain <- glm(Chest_pain ~ treatment_allocation,
+                     data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                     family = binomial(link = "log"))
+tidy(rr_Chest_pain, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Cholelithiasis	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Cholelithiasis)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Cholelithiasis), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+
+#Constipation	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Constipation)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Constipation), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Constipation <- glm(Constipation ~ treatment_allocation,
+                       data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                       family = binomial(link = "log"))
+tidy(rr_Constipation, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Decreased_appetite	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Decreased_appetite)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Decreased_appetite), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+chisq.test(BARI_STEP_AE_SAE_0_or_1_Counts$Decreased_appetite,  BARI_STEP_AE_SAE_0_or_1_Counts$treatment_allocation)
+
+rr_Decreased_appetite <- glm(Decreased_appetite ~ treatment_allocation,
+                             data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                             family = binomial(link = "log"))
+tidy(rr_Decreased_appetite, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Diarrhoea
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Diarrhoea)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Diarrhoea), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+chisq.test(BARI_STEP_AE_SAE_0_or_1_Counts$Diarrhoea,  BARI_STEP_AE_SAE_0_or_1_Counts$treatment_allocation)
+
+rr_Diarrhoea <- glm(Diarrhoea ~ treatment_allocation,
+                    data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                    family = binomial(link = "log"))
+tidy(rr_Diarrhoea, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Dizziness	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Dizziness)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Dizziness), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+chisq.test(BARI_STEP_AE_SAE_0_or_1_Counts$Dizziness,  BARI_STEP_AE_SAE_0_or_1_Counts$treatment_allocation)
+
+rr_Dizziness <- glm(Dizziness ~ treatment_allocation,
+                    data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                    family = binomial(link = "log"))
+tidy(rr_Dizziness, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Dry_mouth
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Dry_mouth)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Dry_mouth), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+
+#Dyspepsia
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Dyspepsia)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Dyspepsia), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+chisq.test(BARI_STEP_AE_SAE_0_or_1_Counts$Dyspepsia,  BARI_STEP_AE_SAE_0_or_1_Counts$treatment_allocation)
+
+rr_Dyspepsia <- glm(Dyspepsia ~ treatment_allocation,
+                    data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                    family = binomial(link = "log"))
+tidy(rr_Dyspepsia, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Fatigue
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Fatigue)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Fatigue), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Fatigue <- glm(Fatigue ~ treatment_allocation,
+                  data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                  family = binomial(link = "log"))
+tidy(rr_Fatigue, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Gastritis	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Gastritis)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Gastritis), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+
+#Headache
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Headache)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Headache), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Headache <- glm(Headache ~ treatment_allocation,
+                   data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                   family = binomial(link = "log"))
+tidy(rr_Headache, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Influenza
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Influenza)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Influenza), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+
+#Injection_site_reactions	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Injection_site_reactions)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Injection_site_reactions), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Injection_site_reactions <- glm(Injection_site_reactions ~ treatment_allocation,
+                                   data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                                   family = binomial(link = "log"))
+tidy(rr_Injection_site_reactions, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Insomnia	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Insomnia)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Insomnia), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Insomnia <- glm(Insomnia ~ treatment_allocation,
+                   data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                   family = binomial(link = "log"))
+tidy(rr_Insomnia, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Nasopharyngitis	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Nasopharyngitis)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Nasopharyngitis), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Nasopharyngitis <- glm(Nasopharyngitis ~ treatment_allocation,
+                          data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                          family = binomial(link = "log"))
+tidy(rr_Nasopharyngitis, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Nausea	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Nausea)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Nausea), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Nausea <- glm(Nausea ~ treatment_allocation,
+                 data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                 family = binomial(link = "log"))
+tidy(rr_Nausea, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Other	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Other)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Other), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Other <- glm(Other ~ treatment_allocation,
+                data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                family = binomial(link = "log"))
+tidy(rr_Other, exponentiate = TRUE, conf.int = TRUE)
+
+#modified Poisson
+poisson_fit_Other <- glm(Other ~ treatment_allocation,
+                         data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                         family = poisson(link = log))
+tidy(poisson_fit_Other, exponentiate = TRUE, conf.int = TRUE)
+#Robust SE
+covmat <- vcovHC(poisson_fit_Other, type = "HC0")
+covmat
+se <- sqrt(diag(covmat))
+model_output <- cbind(
+  Estimate = exp(coef(poisson_fit_Other)),
+  `Robust SE` = se,
+  Lower = exp(coef(poisson_fit_Other) - qnorm(0.975) * se),
+  Upper = exp(coef(poisson_fit_Other) + qnorm(0.975) * se)
+)
+model_output <- as.data.frame(model_output)
+knitr::kable(model_output[2, ], digits = 4)
+
+
+#Palpitations	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Palpitations)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Palpitations), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Palpitations <- glm(Palpitations ~ treatment_allocation,
+                       data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                       family = binomial(link = "log"))
+tidy(rr_Palpitations, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Renal_impairment	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Renal_impairment)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Renal_impairment), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Renal_impairment <- glm(Renal_impairment ~ treatment_allocation,
+                           data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                           family = binomial(link = "log"))
+tidy(rr_Renal_impairment, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Sinusitis	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Sinusitis)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Sinusitis), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+
+#Upper_abdominal_pain
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Upper_abdominal_pain)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Upper_abdominal_pain), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+
+#Upper_respiratory_tract_infection	
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Upper_respiratory_tract_infection)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Upper_respiratory_tract_infection), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Upper_respiratory_tract_infection <- glm(Upper_respiratory_tract_infection ~ treatment_allocation,
+                                            data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                                            family = binomial(link = "log"))
+tidy(rr_Upper_respiratory_tract_infection, exponentiate = TRUE, conf.int = TRUE)
+
+
+#Vomiting
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$Vomiting)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Vomiting), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_Vomiting <- glm(Vomiting ~ treatment_allocation,
+                   data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                   family = binomial(link = "log"))
+tidy(rr_Vomiting, exponentiate = TRUE, conf.int = TRUE)
+
+
+##Number of adverse event incidences
+BARI_STEP_AE_SAE_0_or_1_Counts$AE_incidences <- BARI_STEP_AE_SAE_0_or_1_Counts$Abdominal_bloating	+ BARI_STEP_AE_SAE_0_or_1_Counts$Abdominal_pain	+ BARI_STEP_AE_SAE_0_or_1_Counts$Arthralgia	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Back_pain + BARI_STEP_AE_SAE_0_or_1_Counts$Cellulitis	+ BARI_STEP_AE_SAE_0_or_1_Counts$Chest_pain	+ BARI_STEP_AE_SAE_0_or_1_Counts$Cholelithiasis	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Constipation	+ BARI_STEP_AE_SAE_0_or_1_Counts$Decreased_appetite	+ BARI_STEP_AE_SAE_0_or_1_Counts$Diarrhoea	+ BARI_STEP_AE_SAE_0_or_1_Counts$Dizziness	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Dry_mouth	+ BARI_STEP_AE_SAE_0_or_1_Counts$Dyspepsia	+ BARI_STEP_AE_SAE_0_or_1_Counts$Fatigue	+ BARI_STEP_AE_SAE_0_or_1_Counts$Gastritis	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Headache	+ BARI_STEP_AE_SAE_0_or_1_Counts$Influenza	+ BARI_STEP_AE_SAE_0_or_1_Counts$Injection_site_reactions	+ BARI_STEP_AE_SAE_0_or_1_Counts$Insomnia	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Nasopharyngitis	+ BARI_STEP_AE_SAE_0_or_1_Counts$Nausea	+ BARI_STEP_AE_SAE_0_or_1_Counts$Other	+ BARI_STEP_AE_SAE_0_or_1_Counts$Palpitations	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Renal_impairment	+ BARI_STEP_AE_SAE_0_or_1_Counts$Sinusitis	+ BARI_STEP_AE_SAE_0_or_1_Counts$Upper_abdominal_pain	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Upper_respiratory_tract_infection	+ BARI_STEP_AE_SAE_0_or_1_Counts$Vomiting
+
+BARI_STEP_AE_SAE_0_or_1_Counts %>%
+  group_by(treatment_allocation) %>%
+  summarise(Freq = sum(AE_incidences))
+
+##Number of participants experiencing at least one adverse event 
+
+BARI_STEP_AE_SAE_0_or_1_Counts$AE_atleastone <- 0
+BARI_STEP_AE_SAE_0_or_1_Counts$AE_atleastone[BARI_STEP_AE_SAE_0_or_1_Counts$AE_incidences > 0] <- 1
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(AE_atleastone), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_AE_atleastone <- glm(AE_atleastone ~ treatment_allocation,
+                        data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                        family = binomial(link = "log"))
+tidy(rr_AE_atleastone, exponentiate = TRUE, conf.int = TRUE)
+
+#modified Poisson
+poisson_fit_AE_atleastone <- glm(AE_atleastone ~ treatment_allocation,
+                                 data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                                 family = poisson(link = log))
+tidy(poisson_fit_AE_atleastone, exponentiate = TRUE, conf.int = TRUE)
+#Robust SE
+covmat <- vcovHC(poisson_fit_AE_atleastone, type = "HC0")
+covmat
+se <- sqrt(diag(covmat))
+model_output <- cbind(
+  Estimate = exp(coef(poisson_fit_AE_atleastone)),
+  `Robust SE` = se,
+  Lower = exp(coef(poisson_fit_AE_atleastone) - qnorm(0.975) * se),
+  Upper = exp(coef(poisson_fit_AE_atleastone) + qnorm(0.975) * se)
+)
+model_output <- as.data.frame(model_output)
+knitr::kable(model_output[2, ], digits = 4)
+
+
+##SAE
+
+#Gastro_oesophageal_reflux_disease_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Gastro_oesophageal_reflux_disease_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Fractured_patella_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Fractured_patella_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Rupture_of_right_quadriceps_tendon_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Rupture_of_right_quadriceps_tendon_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Gallstones_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Gallstones_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Pancreatitis_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Pancreatitis_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Spontaneous_bruising_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Spontaneous_bruising_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Acute_Coronary_Syndrome_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Acute_Coronary_Syndrome_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Abdominal_wall_abscess_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Abdominal_wall_abscess_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Ectopic_pregnancy_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Ectopic_pregnancy_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Bradycardia_SAE	
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Bradycardia_SAE), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Eating_disorder_SUSAR
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(Eating_disorder_SUSAR), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+##Number of serious adverse event incidences
+BARI_STEP_AE_SAE_0_or_1_Counts$SAE_incidences <- BARI_STEP_AE_SAE_0_or_1_Counts$Gastro_oesophageal_reflux_disease_SAE + 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Fractured_patella_SAE	+ BARI_STEP_AE_SAE_0_or_1_Counts$Rupture_of_right_quadriceps_tendon_SAE	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Gallstones_SAE	+ BARI_STEP_AE_SAE_0_or_1_Counts$Pancreatitis_SAE	+ BARI_STEP_AE_SAE_0_or_1_Counts$Spontaneous_bruising_SAE	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Acute_Coronary_Syndrome_SAE	+ BARI_STEP_AE_SAE_0_or_1_Counts$Abdominal_wall_abscess_SAE	+ 
+  BARI_STEP_AE_SAE_0_or_1_Counts$Ectopic_pregnancy_SAE	+ BARI_STEP_AE_SAE_0_or_1_Counts$Bradycardia_SAE	+ BARI_STEP_AE_SAE_0_or_1_Counts$Eating_disorder_SUSAR
+
+BARI_STEP_AE_SAE_0_or_1_Counts %>%
+  group_by(treatment_allocation) %>%
+  summarise(Freq = sum(SAE_incidences))
+
+##Number of participants experiencing at least one serious adverse event 
+
+BARI_STEP_AE_SAE_0_or_1_Counts$SAE_atleastone <- 0
+BARI_STEP_AE_SAE_0_or_1_Counts$SAE_atleastone[BARI_STEP_AE_SAE_0_or_1_Counts$SAE_incidences > 0] <- 1
+tab1(BARI_STEP_AE_SAE_0_or_1_Counts$SAE_atleastone)
+crosstable(BARI_STEP_AE_SAE_0_or_1_Counts, c(SAE_atleastone), by =treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+rr_SAE_atleastone <- glm(SAE_atleastone ~ treatment_allocation,
+                         data = BARI_STEP_AE_SAE_0_or_1_Counts,
+                         family = binomial(link = "log"))
+tidy(rr_SAE_atleastone, exponentiate = TRUE, conf.int = TRUE)
+
+
+
+
+
+
+
+########################################
+###       Medications change         ###
+########################################
+
+#Pharmacological agents required for the management of hypertension
+crosstable(BARISTEP_database_ITT, c(HypertensionBaseline), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+BARISTEP_database_ITT_HTN <- BARISTEP_database_ITT %>%
+  filter(HypertensionBaseline == "Yes")
+View(BARISTEP_database_ITT_HTN)
+
+#NoofHypertensiveAgentsBaseline
+crosstable(BARISTEP_database_ITT_HTN, c(NoofHypertensiveAgentsBaseline), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#NoofHypertensiveAgentsEOT
+crosstable(BARISTEP_database_ITT_HTN, c(NoofHypertensiveAgentsEOT), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Change in No of Hypertensive Agents
+BARISTEP_database_ITT_HTN$NoofHypertensiveAgentsChange <- (BARISTEP_database_ITT_HTN$NoofHypertensiveAgentsBaseline - BARISTEP_database_ITT_HTN$NoofHypertensiveAgentsEOT)
+tab1(BARISTEP_database_ITT_HTN$NoofHypertensiveAgentsChange)
+crosstable(BARISTEP_database_ITT_HTN, c(NoofHypertensiveAgentsChange), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+chisq.test(BARISTEP_database_ITT_HTN$NoofHypertensiveAgentsChange,  BARISTEP_database_ITT_HTN$Treatment_allocation)
+fisher.test(BARISTEP_database_ITT_HTN$NoofHypertensiveAgentsChange,  BARISTEP_database_ITT_HTN$Treatment_allocation)
+
+#Pharmacological agents required for the management of T2D.
+BARISTEP_database_ITT_Diabetes <- BARISTEP_database_ITT %>%
+  filter(Diabetes == "Diabetic")
+View(BARISTEP_database_ITT_Diabetes)
+
+#NoofDT2DAgentsBaseline
+crosstable(BARISTEP_database_ITT_Diabetes, c(NoofDT2DAgentsBaseline), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#NoofT2DAgentsEOT
+crosstable(BARISTEP_database_ITT_Diabetes, c(NoofT2DAgentsEOT), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Change in No of T2D Agents
+BARISTEP_database_ITT_Diabetes$NoofDT2DAgentsChange <- (BARISTEP_database_ITT_Diabetes$NoofDT2DAgentsBaseline - BARISTEP_database_ITT_Diabetes$NoofT2DAgentsEOT)
+tab1(BARISTEP_database_ITT_Diabetes$NoofDT2DAgentsChange)
+crosstable(BARISTEP_database_ITT_Diabetes, c(NoofDT2DAgentsChange), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+chisq.test(BARISTEP_database_ITT_Diabetes$NoofDT2DAgentsChange,  BARISTEP_database_ITT_Diabetes$Treatment_allocation)
+fisher.test(BARISTEP_database_ITT_Diabetes$NoofDT2DAgentsChange,  BARISTEP_database_ITT_Diabetes$Treatment_allocation)
+
+
+
+########################################
+########################################
+###     Supplementary Tables         ###
+########################################
+########################################
+
+########################################
+###     Supplementary Table 1        ###
+########################################
+
+#Table 1: Baseline characteristics of participants included in the primary outcome analysis (ITT)
+
+#Age
+BARISTEP_database_ITT %>%
+  ggplot(mapping = aes(x = ScreeningAge)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database_ITT, aes(x=ScreeningAge))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database_ITT, c(ScreeningAge), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Sex
+crosstable(BARISTEP_database_ITT, c(Sex), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#FamilyHistoryOfObesity
+crosstable(BARISTEP_database_ITT, c(FamilyHistoryOfObesity), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Weight (kg)
+BARISTEP_database_ITT %>%
+  ggplot(mapping = aes(x = v2Weightkg)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database_ITT, aes(x=v2Weightkg))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database_ITT, c(v2Weightkg), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#BMI
+BARISTEP_database_ITT %>%
+  ggplot(mapping = aes(x = v2Bmi)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database_ITT, aes(x=v2Bmi))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database_ITT, c(v2Bmi), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#BMI categorical
+BARISTEP_database_ITT$bmi_v2_cat <- 0
+BARISTEP_database_ITT$bmi_v2_cat[BARISTEP_database_ITT$v2Bmi >= 20] <- 1
+BARISTEP_database_ITT$bmi_v2_cat[BARISTEP_database_ITT$v2Bmi >= 30] <- 2
+BARISTEP_database_ITT$bmi_v2_cat[BARISTEP_database_ITT$v2Bmi >= 35] <- 3
+BARISTEP_database_ITT$bmi_v2_cat[BARISTEP_database_ITT$v2Bmi >= 40] <- 4
+BARISTEP_database_ITT$bmi_v2_cat <- as.factor(BARISTEP_database_ITT$bmi_v2_cat)
+crosstable(BARISTEP_database_ITT, c(bmi_v2_cat), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", funs_arg=list(dig=1))
+
+#%WL since day of surgery to randomisation PercentageWeightLosssinceDOS
+BARISTEP_database_ITT %>%
+  ggplot(mapping = aes(x = PercentageWeightLosssinceDOS)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database_ITT, aes(x=PercentageWeightLosssinceDOS))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+tab1(BARISTEP_database_ITT$PercentageWeightLosssinceDOS)
+crosstable(BARISTEP_database_ITT, c(PercentageWeightLosssinceDOS), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Ethnicity
+crosstable(BARISTEP_database_ITT, c(Ethnicity_coded), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Type of Metabolic Surgery
+tab1(BARISTEP_database_ITT$TypeOfSurgery)
+crosstable(BARISTEP_database_ITT, c(TypeOfSurgery), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Time (in months) since day of surgery
+BARISTEP_database_ITT$months_since_surgery <- interval(BARISTEP_database_ITT$DateofSurgery, BARISTEP_database_ITT$DateRandomisation) / months(1)
+
+BARISTEP_database_ITT %>%
+  ggplot(mapping = aes(x = months_since_surgery)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database_ITT, aes(x=months_since_surgery))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database_ITT, c(months_since_surgery), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Diabetes Status
+crosstable(BARISTEP_database_ITT, c(Diabetes), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#HbA1C
+BARISTEP_database_ITT %>%
+  ggplot(mapping = aes(x = V2HbA1C)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database_ITT, aes(x=V2HbA1C))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database_ITT, c(V2HbA1C), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Change in meal-stimulated GLP-1
+BARISTEP_database_ITT$GLP1_baselinechange <- (BARISTEP_database_ITT$`GLP1-0Minutes` - BARISTEP_database_ITT$`GLP1-30minutes`)
+
+BARISTEP_database_ITT %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = GLP1_baselinechange)) +
+  geom_boxplot()
+BARISTEP_database_ITT %>%
+  ggplot(mapping = aes(x = GLP1_baselinechange)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database_ITT, aes(x=GLP1_baselinechange))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database_ITT, c(GLP1_baselinechange), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+
+
+########################################
+###     Supplementary Table 2        ###
+########################################
+
+#Table 2: Repeated measures analysis of secondary outcomes
+
+#Repeated measures fat mass
+BARISTEP_database$FMchange_V6 <-  (BARISTEP_database$v2FatMassKg - BARISTEP_database$V6FatMassKg)
+BARISTEP_database$FMchange_V10 <- (BARISTEP_database$v2FatMassKg - BARISTEP_database$V10FatMassKg)
+BARISTEP_database$FMchange_V15 <- (BARISTEP_database$v2FatMassKg - BARISTEP_database$v15FatMassKg)
+BARISTEP_database$FMchange_V20 <- (BARISTEP_database$v2FatMassKg - BARISTEP_database$v20FatMassKg)
+BARISTEP_database$FMchange_V24 <- (BARISTEP_database$v2FatMassKg - BARISTEP_database$v24FatMassKg)
+
+#Long dataset
+BARISTEP_database_long_FMchange <- pivot_longer(BARISTEP_database, cols=c('FMchange_V6','FMchange_V10','FMchange_V15','FMchange_V20','FMchange_V24'), 
+                                                names_to = "visit", values_to = "FMchange")
+View(BARISTEP_database_long_FMchange)
+
+BARISTEP_database_long_FMchange$visit_numeric <- 0
+BARISTEP_database_long_FMchange$visit_numeric[BARISTEP_database_long_FMchange$visit == "FMchange_V6"] <- 2
+BARISTEP_database_long_FMchange$visit_numeric[BARISTEP_database_long_FMchange$visit == "FMchange_V10"] <- 3
+BARISTEP_database_long_FMchange$visit_numeric[BARISTEP_database_long_FMchange$visit == "FMchange_V15"] <- 4
+BARISTEP_database_long_FMchange$visit_numeric[BARISTEP_database_long_FMchange$visit == "FMchange_V20"] <- 5
+BARISTEP_database_long_FMchange$visit_numeric[BARISTEP_database_long_FMchange$visit == "FMchange_V24"] <- 6
+tab1(BARISTEP_database_long_FMchange$visit_numeric)
+
+FMchange_RepeatedMeasures <- lmer(FMchange ~Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2FatMassKg +
+                                    (1|identifier), data = BARISTEP_database_long_FMchange)
+summary(FMchange_RepeatedMeasures)
+plot_model(FMchange_RepeatedMeasures, type='diag')
+lsmeans(FMchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(FMchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+
+#Repeated measures muscle mass (kg)
+BARISTEP_database$MMchange_V6 <- (BARISTEP_database$V2MuscleMassKg - BARISTEP_database$V6MuscleMassKg)
+BARISTEP_database$MMchange_V10 <- (BARISTEP_database$V2MuscleMassKg - BARISTEP_database$V10MuscleMassKg)
+BARISTEP_database$MMchange_V15 <- (BARISTEP_database$V2MuscleMassKg - BARISTEP_database$v15MuscleMassKg)
+BARISTEP_database$MMchange_V20 <- (BARISTEP_database$V2MuscleMassKg - BARISTEP_database$v20MuscleMassKg)
+BARISTEP_database$MMchange_V24 <- (BARISTEP_database$V2MuscleMassKg - BARISTEP_database$v24MuscleMassKg)
+
+#Long dataset
+BARISTEP_database_long_MMchange <- pivot_longer(BARISTEP_database, cols=c('MMchange_V6','MMchange_V10','MMchange_V15','MMchange_V20','MMchange_V24'), 
+                                                names_to = "visit", values_to = "MMchange")
+View(BARISTEP_database_long_MMchange)
+
+BARISTEP_database_long_MMchange$visit_numeric <- 0
+BARISTEP_database_long_MMchange$visit_numeric[BARISTEP_database_long_MMchange$visit == "MMchange_V6"] <- 2
+BARISTEP_database_long_MMchange$visit_numeric[BARISTEP_database_long_MMchange$visit == "MMchange_V10"] <- 3
+BARISTEP_database_long_MMchange$visit_numeric[BARISTEP_database_long_MMchange$visit == "MMchange_V15"] <- 4
+BARISTEP_database_long_MMchange$visit_numeric[BARISTEP_database_long_MMchange$visit == "MMchange_V20"] <- 5
+BARISTEP_database_long_MMchange$visit_numeric[BARISTEP_database_long_MMchange$visit == "MMchange_V24"] <- 6
+tab1(BARISTEP_database_long_MMchange$visit_numeric)
+
+MMchange_RepeatedMeasures <- lmer(MMchange ~Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + V2MuscleMassKg +
+                                    (1|identifier), data = BARISTEP_database_long_MMchange)
+summary(MMchange_RepeatedMeasures)
+plot_model(MMchange_RepeatedMeasures, type='diag')
+lsmeans(MMchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(MMchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+
+#Repeated measures HbA1c
+BARISTEP_database$Hba1cchange_V6 <- (BARISTEP_database$V2HbA1C - BARISTEP_database$V6HbA1C)
+BARISTEP_database$Hba1cchange_V10 <- (BARISTEP_database$V2HbA1C - BARISTEP_database$V10HbA1C)
+BARISTEP_database$Hba1cchange_V15 <- (BARISTEP_database$V2HbA1C - BARISTEP_database$V15HbA1C)
+BARISTEP_database$Hba1cchange_V20 <- (BARISTEP_database$V2HbA1C - BARISTEP_database$v20HbA1C)
+BARISTEP_database$Hba1cchange_V24 <- (BARISTEP_database$V2HbA1C - BARISTEP_database$V24HbA1C)
+
+#Long dataset
+BARISTEP_database_long_Hba1cchange <- pivot_longer(BARISTEP_database, cols=c('Hba1cchange_V6','Hba1cchange_V10','Hba1cchange_V15','Hba1cchange_V20','Hba1cchange_V24'), 
+                                                   names_to = "visit", values_to = "Hba1cchange")
+View(BARISTEP_database_long_Hba1cchange)
+
+BARISTEP_database_long_Hba1cchange$visit_numeric <- 0
+BARISTEP_database_long_Hba1cchange$visit_numeric[BARISTEP_database_long_Hba1cchange$visit == "Hba1cchange_V6"] <- 2
+BARISTEP_database_long_Hba1cchange$visit_numeric[BARISTEP_database_long_Hba1cchange$visit == "Hba1cchange_V10"] <- 3
+BARISTEP_database_long_Hba1cchange$visit_numeric[BARISTEP_database_long_Hba1cchange$visit == "Hba1cchange_V15"] <- 4
+BARISTEP_database_long_Hba1cchange$visit_numeric[BARISTEP_database_long_Hba1cchange$visit == "Hba1cchange_V20"] <- 5
+BARISTEP_database_long_Hba1cchange$visit_numeric[BARISTEP_database_long_Hba1cchange$visit == "Hba1cchange_V24"] <- 6
+tab1(BARISTEP_database_long_Hba1cchange$visit_numeric)
+
+Hba1cchange_RepeatedMeasures <- lmer(Hba1cchange ~Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + V2HbA1C +
+                                       (1|identifier), data = BARISTEP_database_long_Hba1cchange)
+summary(Hba1cchange_RepeatedMeasures)
+plot_model(Hba1cchange_RepeatedMeasures, type='diag')
+lsmeans(Hba1cchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(Hba1cchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+
+#Repeated measures SBP
+BARISTEP_database$SBPchange_V6 <- (BARISTEP_database$v2SystolicBloodPressure - BARISTEP_database$v6SystolicBloodPressure)
+BARISTEP_database$SBPchange_V10 <- (BARISTEP_database$v2SystolicBloodPressure - BARISTEP_database$V10SystolicBloodPressure)
+BARISTEP_database$SBPchange_V15 <- (BARISTEP_database$v2SystolicBloodPressure - BARISTEP_database$V15SystolicBloodPressure)
+BARISTEP_database$SBPchange_V20 <- (BARISTEP_database$v2SystolicBloodPressure - BARISTEP_database$v20SystolicBloodPressure)
+BARISTEP_database$SBPchange_V24 <- (BARISTEP_database$v2SystolicBloodPressure - BARISTEP_database$v24SystolicBloodPressure)
+
+#Long dataset
+BARISTEP_database_long_SBPchange <- pivot_longer(BARISTEP_database, cols=c('SBPchange_V6','SBPchange_V10','SBPchange_V15','SBPchange_V20','SBPchange_V24'), 
+                                                 names_to = "visit", values_to = "SBPchange")
+View(BARISTEP_database_long_SBPchange)
+
+BARISTEP_database_long_SBPchange$visit_numeric <- 0
+BARISTEP_database_long_SBPchange$visit_numeric[BARISTEP_database_long_SBPchange$visit == "SBPchange_V6"] <- 2
+BARISTEP_database_long_SBPchange$visit_numeric[BARISTEP_database_long_SBPchange$visit == "SBPchange_V10"] <- 3
+BARISTEP_database_long_SBPchange$visit_numeric[BARISTEP_database_long_SBPchange$visit == "SBPchange_V15"] <- 4
+BARISTEP_database_long_SBPchange$visit_numeric[BARISTEP_database_long_SBPchange$visit == "SBPchange_V20"] <- 5
+BARISTEP_database_long_SBPchange$visit_numeric[BARISTEP_database_long_SBPchange$visit == "SBPchange_V24"] <- 6
+tab1(BARISTEP_database_long_SBPchange$visit_numeric)
+
+SBPchange_RepeatedMeasures <- lmer(SBPchange ~Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2SystolicBloodPressure +
+                                     (1|identifier), data = BARISTEP_database_long_SBPchange)
+summary(SBPchange_RepeatedMeasures)
+plot_model(SBPchange_RepeatedMeasures, type='diag')
+lsmeans(SBPchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(SBPchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+
+#Repeated measures DBP
+BARISTEP_database$DBPchange_V6 <- (BARISTEP_database$v2DiastolicBloodPressure - BARISTEP_database$v6DiastolicBloodPressure)
+BARISTEP_database$DBPchange_V10 <- (BARISTEP_database$v2DiastolicBloodPressure - BARISTEP_database$V10DiastolicBloodPressure)
+BARISTEP_database$DBPchange_V15 <- (BARISTEP_database$v2DiastolicBloodPressure - BARISTEP_database$V15DiastolicBloodPressure)
+BARISTEP_database$DBPchange_V20 <- (BARISTEP_database$v2DiastolicBloodPressure - BARISTEP_database$v20DiastolicBloodPressure)
+BARISTEP_database$DBPchange_V24 <- (BARISTEP_database$v2DiastolicBloodPressure - BARISTEP_database$v24DiastolicBloodPressure)
+
+#Long dataset
+BARISTEP_database_long_DBPchange <- pivot_longer(BARISTEP_database, cols=c('DBPchange_V6','DBPchange_V10','DBPchange_V15','DBPchange_V20','DBPchange_V24'), 
+                                                 names_to = "visit", values_to = "DBPchange")
+View(BARISTEP_database_long_DBPchange)
+
+BARISTEP_database_long_DBPchange$visit_numeric <- 0
+BARISTEP_database_long_DBPchange$visit_numeric[BARISTEP_database_long_DBPchange$visit == "DBPchange_V6"] <- 2
+BARISTEP_database_long_DBPchange$visit_numeric[BARISTEP_database_long_DBPchange$visit == "DBPchange_V10"] <- 3
+BARISTEP_database_long_DBPchange$visit_numeric[BARISTEP_database_long_DBPchange$visit == "DBPchange_V15"] <- 4
+BARISTEP_database_long_DBPchange$visit_numeric[BARISTEP_database_long_DBPchange$visit == "DBPchange_V20"] <- 5
+BARISTEP_database_long_DBPchange$visit_numeric[BARISTEP_database_long_DBPchange$visit == "DBPchange_V24"] <- 6
+tab1(BARISTEP_database_long_DBPchange$visit_numeric)
+
+DBPchange_RepeatedMeasures <- lmer(DBPchange ~Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2DiastolicBloodPressure +
+                                     (1|identifier), data = BARISTEP_database_long_DBPchange)
+summary(DBPchange_RepeatedMeasures)
+plot_model(DBPchange_RepeatedMeasures, type='diag')
+lsmeans(DBPchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(DBPchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+#Repeated measures hsCRP
+BARISTEP_database$HsCrp_Baseline[BARISTEP_database$HsCrp_Baseline == "N/A"] <- NA
+BARISTEP_database$HsCrp_Baseline <- as.numeric(BARISTEP_database$HsCrp_Baseline)
+BARISTEP_database$V6_HsCrp[BARISTEP_database$V6_HsCrp == "N/A"] <- NA
+BARISTEP_database$V6_HsCrp <- as.numeric(BARISTEP_database$V6_HsCrp)
+BARISTEP_database$V10_HsCrp[BARISTEP_database$V10_HsCrp == "N/A"] <- NA
+BARISTEP_database$V10_HsCrp <- as.numeric(BARISTEP_database$V10_HsCrp)
+BARISTEP_database$V15_HsCrp[BARISTEP_database$V15_HsCrp == "N/A"] <- NA
+BARISTEP_database$V15_HsCrp <- as.numeric(BARISTEP_database$V15_HsCrp)
+BARISTEP_database$V20_HsCrp[BARISTEP_database$V20_HsCrp == "N/A"] <- NA
+BARISTEP_database$V20_HsCrp <- as.numeric(BARISTEP_database$V20_HsCrp)
+BARISTEP_database$HsCrp_V24[BARISTEP_database$HsCrp_V24 == "N/A"] <- NA
+BARISTEP_database$HsCrp_V24 <- as.numeric(BARISTEP_database$HsCrp_V24)
+
+BARISTEP_database$HsCrpchange_V6 <- (BARISTEP_database$HsCrp_Baseline - BARISTEP_database$V6_HsCrp)
+BARISTEP_database$HsCrpchange_V10 <- (BARISTEP_database$HsCrp_Baseline - BARISTEP_database$V10_HsCrp)
+BARISTEP_database$HsCrpchange_V15 <- (BARISTEP_database$HsCrp_Baseline - BARISTEP_database$V15_HsCrp)
+BARISTEP_database$HsCrpchange_V20 <- (BARISTEP_database$HsCrp_Baseline - BARISTEP_database$V20_HsCrp)
+BARISTEP_database$HsCrpchange_V24 <- (BARISTEP_database$HsCrp_Baseline - BARISTEP_database$HsCrp_V24)
+
+#Long dataset
+BARISTEP_database_long_HsCrpchange <- pivot_longer(BARISTEP_database, cols=c('HsCrpchange_V6','HsCrpchange_V10','HsCrpchange_V15','HsCrpchange_V20','HsCrpchange_V24'), 
+                                                 names_to = "visit", values_to = "HsCrpchange")
+View(BARISTEP_database_long_HsCrpchange)
+
+BARISTEP_database_long_HsCrpchange$visit_numeric <- 0
+BARISTEP_database_long_HsCrpchange$visit_numeric[BARISTEP_database_long_HsCrpchange$visit == "HsCrpchange_V6"] <- 2
+BARISTEP_database_long_HsCrpchange$visit_numeric[BARISTEP_database_long_HsCrpchange$visit == "HsCrpchange_V10"] <- 3
+BARISTEP_database_long_HsCrpchange$visit_numeric[BARISTEP_database_long_HsCrpchange$visit == "HsCrpchange_V15"] <- 4
+BARISTEP_database_long_HsCrpchange$visit_numeric[BARISTEP_database_long_HsCrpchange$visit == "HsCrpchange_V20"] <- 5
+BARISTEP_database_long_HsCrpchange$visit_numeric[BARISTEP_database_long_HsCrpchange$visit == "HsCrpchange_V24"] <- 6
+tab1(BARISTEP_database_long_HsCrpchange$visit_numeric)
+
+HsCrpchange_RepeatedMeasures <- lmer(HsCrpchange ~Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + HsCrp_Baseline +
+                                     (1|identifier), data = BARISTEP_database_long_HsCrpchange)
+summary(HsCrpchange_RepeatedMeasures)
+plot_model(HsCrpchange_RepeatedMeasures, type='diag')
+lsmeans(HsCrpchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(HsCrpchange_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+
+#IWQoL-Lite Repeated measures
+BARISTEP_IWQoL_MODEL_All_Changes_for_models <- read_excel("BARISTEP_IWQoL_MODEL_All_Changes_for_models_13Oct25.xlsx")
+View(BARISTEP_IWQoL_MODEL_All_Changes_for_models)
+
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_RM <- BARISTEP_IWQoL_MODEL_All_Changes_for_models %>%
+  filter(visit_numeric != 2)
+View(BARISTEP_IWQoL_MODEL_All_Changes_for_models_RM)
+
+#iwqol_lite_total_score_average_transformed_change Repeated measures
+BARISTEP.IWQOLtotal.RM <- lmer(iwqol_lite_total_score_average_transformed_change ~ Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_total_score_average_transformed +
+                                 (1|identifier), data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_RM)
+summary(BARISTEP.IWQOLtotal.RM)
+plot_model(BARISTEP.IWQOLtotal.RM, type='diag')
+lsmeans(BARISTEP.IWQOLtotal.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLtotal.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_physical_function_average_transformed Repeated measures
+BARISTEP.IWQOLpf.RM <- lmer(iwqol_lite_physical_function_average_transformed_change ~ Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_physical_function_average_transformed +
+                              (1|identifier), data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_RM)
+summary(BARISTEP.IWQOLpf.RM)
+plot_model(BARISTEP.IWQOLpf.RM, type='diag')
+lsmeans(BARISTEP.IWQOLpf.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLpf.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_self_esteem_average_transformed Repeated measures
+BARISTEP.IWQOLse.RM <- lmer(iwqol_lite_self_esteem_average_transformed_change ~ Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_self_esteem_average_transformed+
+                              (1|identifier), data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_RM)
+summary(BARISTEP.IWQOLse.RM)
+plot_model(BARISTEP.IWQOLse.RM, type='diag')
+lsmeans(BARISTEP.IWQOLse.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLse.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_sexual_life_total_average_transformed Repeated measures
+BARISTEP.IWQOLsl.RM <- lmer(iwqol_lite_sexual_life_total_average_transformed_change ~ Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_sexual_life_total_average_transformed +
+                              (1|identifier), data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_RM)
+summary(BARISTEP.IWQOLsl.RM)
+plot_model(BARISTEP.IWQOLsl.RM, type='diag')
+lsmeans(BARISTEP.IWQOLsl.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLsl.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_public_distress_total_average_transformed Repeated measures
+BARISTEP.IWQOLpd.RM <- lmer(iwqol_lite_public_distress_total_average_transformed_change ~ Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_public_distress_total_average_transformed +
+                              (1|identifier), data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_RM)
+summary(BARISTEP.IWQOLpd.RM)
+plot_model(BARISTEP.IWQOLpd.RM, type='diag')
+lsmeans(BARISTEP.IWQOLpd.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLpd.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+#iwqol_lite_work_total_average_transformed Repeated measures
+BARISTEP.IWQOLwork.RM <- lmer(iwqol_lite_work_total_average_transformed_change ~ Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + baseline_iwqol_lite_work_total_average_transformed +
+                                (1|identifier), data = BARISTEP_IWQoL_MODEL_All_Changes_for_models_RM)
+summary(BARISTEP.IWQOLwork.RM)
+plot_model(BARISTEP.IWQOLwork.RM, type='diag')
+lsmeans(BARISTEP.IWQOLwork.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(BARISTEP.IWQOLwork.RM, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+
+
+########################################
+###     Supplementary Table 3        ###
+########################################
+
+#Table 3: Changes in secondary outcomes at 68 weeks from baseline (unadjusted) 
+
+#Total Body Weight
+BARISTEP_database$Weightchange_week68 <- (BARISTEP_database$v2Weightkg - BARISTEP_database$v24WeightKG)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = Weightchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = Weightchange_week68)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database, aes(x=Weightchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 6)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(Weightchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=2))
+var.test(BARISTEP_database$Weightchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$Weightchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#BMI
+BARISTEP_database$BMIchange_week68 <- (BARISTEP_database$v2Bmi - BARISTEP_database$v24Bmi)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = BMIchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = BMIchange_week68)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database, aes(x=BMIchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(BMIchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$BMIchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$BMIchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#Fat mass
+BARISTEP_database$FatMasschange_week68 <- (BARISTEP_database$v2FatMassKg - BARISTEP_database$v24FatMassKg)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = FatMasschange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = FatMasschange_week68)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database, aes(x=FatMasschange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(FatMasschange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$FatMasschange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$FatMasschange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#Lean Soft Tissue Mass (%)
+BARISTEP_database$MMpct_V2 <- ((BARISTEP_database$V2MuscleMassKg / BARISTEP_database$v2Weightkg) * 100)
+BARISTEP_database$MMpct_V24 <- ((BARISTEP_database$v24MuscleMassKg / BARISTEP_database$v24WeightKG) * 100)
+BARISTEP_database$MMpctchange_week68 <- (BARISTEP_database$MMpct_V2 - BARISTEP_database$MMpct_V24)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = MMpctchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = MMpctchange_week68)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database, aes(x=MMpctchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(MMpctchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$MMpctchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$MMpctchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#Lean Soft Tissue Mass (kg)
+BARISTEP_database$MMchange_week68 <- (BARISTEP_database$V2MuscleMassKg - BARISTEP_database$v24MuscleMassKg)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = MMchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = MMchange_week68)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database, aes(x=MMchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(MMchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$MMchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$MMchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#HbA1c
+BARISTEP_database$HbA1cchange_week68 <- (BARISTEP_database$V2HbA1C - BARISTEP_database$V24HbA1C)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = HbA1cchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = HbA1cchange_week68)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database, aes(x=HbA1cchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 6)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(HbA1cchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$HbA1cchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$HbA1cchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#Heart rate
+BARISTEP_database$HRchange_week68 <- (BARISTEP_database$v2HeartRate - BARISTEP_database$v24HeartRate)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = HRchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = HRchange_week68)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_database, aes(x=HRchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(HRchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$HRchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$HRchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#SBP
+BARISTEP_database$SBPchange_week68 <- (BARISTEP_database$v2SystolicBloodPressure - BARISTEP_database$v24SystolicBloodPressure)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = SBPchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = SBPchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=SBPchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(SBPchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$SBPchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$SBPchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#DBP
+BARISTEP_database$DBPchange_week68 <- (BARISTEP_database$v2DiastolicBloodPressure - BARISTEP_database$v24DiastolicBloodPressure)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = DBPchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = DBPchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=DBPchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(DBPchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$DBPchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$DBPchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#Total Cholesterol
+BARISTEP_database$Cholesterolchange_week68 <- (BARISTEP_database$Cholesterol_Baseline - BARISTEP_database$Cholesterol_V24)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = Cholesterolchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = Cholesterolchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=Cholesterolchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(Cholesterolchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$Cholesterolchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$Cholesterolchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#Triglycerides
+BARISTEP_database$Triglycerideschange_week68 <- (BARISTEP_database$Triglycerides_Baseline - BARISTEP_database$Triglycerides_V24)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = DBPchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = DBPchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=DBPchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(Triglycerideschange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$Triglycerideschange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$Triglycerideschange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= TRUE)
+
+#HsCRP
+BARISTEP_database$HsCrpchange_week68 <- (BARISTEP_database$HsCrp_Baseline - BARISTEP_database$HsCrp_V24)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = DBPchange_week68)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = DBPchange_week68)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=DBPchange_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_database, c(HsCrpchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_database$HsCrpchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation))
+t.test(BARISTEP_database$HsCrpchange_week68 ~ as.factor(BARISTEP_database$Treatment_allocation), alternative = "two.sided", var.equal= F)
+
+#IWQoL-Lite
+BARISTEP_IWQoL_MODEL_All_Changes_for_models <- read_excel("BARISTEP_IWQoL_MODEL_All_Changes_for_models_13Oct25.xlsx")
+View(BARISTEP_IWQoL_MODEL_All_Changes_for_models)
+
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 <- BARISTEP_IWQoL_MODEL_All_Changes_for_models %>%
+  filter(visit_numeric == 24)
+View(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24)
+
+#iwqol_lite_physical_function_average_transformed_change
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_physical_function_average_transformed_change)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>%
+  ggplot(mapping = aes(x = iwqol_lite_physical_function_average_transformed_change)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, aes(x=iwqol_lite_physical_function_average_transformed_change))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, c(iwqol_lite_physical_function_average_transformed_change), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_physical_function_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation))
+t.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_physical_function_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation), alternative = "two.sided", var.equal= T)
+
+#iwqol_lite_self_esteem_average_transformed_change
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_self_esteem_average_transformed_change)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>%
+  ggplot(mapping = aes(x = iwqol_lite_self_esteem_average_transformed_change)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, aes(x=iwqol_lite_self_esteem_average_transformed_change))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, c(iwqol_lite_self_esteem_average_transformed_change), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_self_esteem_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation))
+t.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_self_esteem_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation), alternative = "two.sided", var.equal= F)
+
+#iwqol_lite_sexual_life_total_average_transformed_change
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_sexual_life_total_average_transformed_change)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>%
+  ggplot(mapping = aes(x = iwqol_lite_sexual_life_total_average_transformed_change)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, aes(x=iwqol_lite_sexual_life_total_average_transformed_change))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, c(iwqol_lite_sexual_life_total_average_transformed_change), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_sexual_life_total_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation))
+t.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_sexual_life_total_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation), alternative = "two.sided", var.equal= T)
+
+#iwqol_lite_public_distress_total_average_transformed_change
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_public_distress_total_average_transformed_change)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>%
+  ggplot(mapping = aes(x = iwqol_lite_public_distress_total_average_transformed_change)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, aes(x=iwqol_lite_public_distress_total_average_transformed_change))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, c(iwqol_lite_public_distress_total_average_transformed_change), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_public_distress_total_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation))
+t.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_public_distress_total_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation), alternative = "two.sided", var.equal= T)
+
+#iwqol_lite_work_total_average_transformed_change
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_work_total_average_transformed_change)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>%
+  ggplot(mapping = aes(x = iwqol_lite_work_total_average_transformed_change)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, aes(x=iwqol_lite_work_total_average_transformed_change))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, c(iwqol_lite_work_total_average_transformed_change), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_work_total_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation))
+t.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_work_total_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation), alternative = "two.sided", var.equal= T)
+
+#iwqol_lite_total_score_average_transformed_change
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_total_score_average_transformed_change)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24 %>%
+  ggplot(mapping = aes(x = iwqol_lite_total_score_average_transformed_change)) +
+  geom_histogram(bins = 8)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, aes(x=iwqol_lite_total_score_average_transformed_change))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24, c(iwqol_lite_total_score_average_transformed_change), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+var.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_total_score_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation))
+t.test(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$iwqol_lite_total_score_average_transformed_change ~ as.factor(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V24$Treatment_allocation), alternative = "two.sided", var.equal= T)
+
+
+
+
+########################################
+###     Supplementary Table 4        ###
+########################################
+
+#Table 4: Baseline values for IWQOL-Lite scores
+
+BARISTEP_IWQoL_MODEL_All_Changes_for_models <- read_excel("BARISTEP_IWQoL_MODEL_All_Changes_for_models_13Oct25.xlsx")
+View(BARISTEP_IWQoL_MODEL_All_Changes_for_models)
+
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 <- BARISTEP_IWQoL_MODEL_All_Changes_for_models %>%
+  filter(visit_numeric == 2)
+View(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2)
+
+#iwqol_lite_total_score_average_transformed
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_total_score_average_transformed)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>%
+  ggplot(mapping = aes(x = iwqol_lite_total_score_average_transformed)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, aes(x=iwqol_lite_total_score_average_transformed))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+tab1(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2$iwqol_lite_total_score_average_transformed)
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, c(iwqol_lite_total_score_average_transformed), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#iwqol_lite_physical_function_average_transformed
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_physical_function_average_transformed)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>%
+  ggplot(mapping = aes(x = iwqol_lite_physical_function_average_transformed)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, aes(x=iwqol_lite_physical_function_average_transformed))+
+  geom_histogram(color="black", fill="white", bins = 10)+
+  facet_grid(Treatment_allocation ~ .)
+
+tab1(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2$iwqol_lite_physical_function_average_transformed)
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, c(iwqol_lite_physical_function_average_transformed), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#iwqol_lite_self_esteem_average_transformed
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_self_esteem_average_transformed)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>%
+  ggplot(mapping = aes(x = iwqol_lite_self_esteem_average_transformed)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, aes(x=iwqol_lite_self_esteem_average_transformed))+
+  geom_histogram(color="black", fill="white", bins = 5)+
+  facet_grid(Treatment_allocation ~ .)
+
+tab1(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2$iwqol_lite_self_esteem_average_transformed)
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, c(iwqol_lite_self_esteem_average_transformed), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#iwqol_lite_sexual_life_total_average_transformed
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_sexual_life_total_average_transformed)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>%
+  ggplot(mapping = aes(x = iwqol_lite_sexual_life_total_average_transformed)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, aes(x=iwqol_lite_sexual_life_total_average_transformed))+
+  geom_histogram(color="black", fill="white", bins = 5)+
+  facet_grid(Treatment_allocation ~ .)
+
+tab1(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2$iwqol_lite_sexual_life_total_average_transformed)
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, c(iwqol_lite_sexual_life_total_average_transformed), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#iwqol_lite_public_distress_total_average_transformed
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_public_distress_total_average_transformed)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>%
+  ggplot(mapping = aes(x = iwqol_lite_public_distress_total_average_transformed)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, aes(x=iwqol_lite_public_distress_total_average_transformed))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+tab1(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2$iwqol_lite_public_distress_total_average_transformed)
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, c(iwqol_lite_public_distress_total_average_transformed), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#iwqol_lite_work_total_average_transformed
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = iwqol_lite_work_total_average_transformed)) +
+  geom_boxplot()
+BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2 %>%
+  ggplot(mapping = aes(x = iwqol_lite_work_total_average_transformed)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, aes(x=iwqol_lite_work_total_average_transformed))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(Treatment_allocation ~ .)
+
+tab1(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2$iwqol_lite_work_total_average_transformed)
+crosstable(BARISTEP_IWQoL_MODEL_All_Changes_for_models_V2, c(iwqol_lite_work_total_average_transformed), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+########################################
+###     Supplementary Table 5        ###
+########################################
+
+#Table 5: Repeated measures analysis of primary outcome
+
+#Repeated measures %WL
+
+#Compute Change Outcomes
+BARISTEP_database$PctWL_V6 <- ((BARISTEP_database$v2Weightkg - BARISTEP_database$V6WeightKG)/BARISTEP_database$v2Weightkg) *100
+BARISTEP_database$PctWL_V10 <- ((BARISTEP_database$v2Weightkg - BARISTEP_database$V10WeightKG)/BARISTEP_database$v2Weightkg) *100
+BARISTEP_database$PctWL_V15 <- ((BARISTEP_database$v2Weightkg - BARISTEP_database$v15WeightKG)/BARISTEP_database$v2Weightkg) *100
+BARISTEP_database$PctWL_V20 <- ((BARISTEP_database$v2Weightkg - BARISTEP_database$v20Weightkg)/BARISTEP_database$v2Weightkg) *100
+BARISTEP_database$PctWL_V24 <- ((BARISTEP_database$v2Weightkg - BARISTEP_database$v24WeightKG)/BARISTEP_database$v2Weightkg) *100
+
+BARISTEP_database_long <- pivot_longer(BARISTEP_database, cols=c('PctWL_V6','PctWL_V10','PctWL_V15','PctWL_V20','PctWL_V24'), 
+                                       names_to = "visit", values_to = "PctWL")
+View(BARISTEP_database_long)
+
+BARISTEP_database_long$visit_numeric <- 0
+BARISTEP_database_long$visit_numeric[BARISTEP_database_long$visit == "PctWL_V6"] <- 2
+BARISTEP_database_long$visit_numeric[BARISTEP_database_long$visit == "PctWL_V10"] <- 3
+BARISTEP_database_long$visit_numeric[BARISTEP_database_long$visit == "PctWL_V15"] <- 4
+BARISTEP_database_long$visit_numeric[BARISTEP_database_long$visit == "PctWL_V20"] <- 5
+BARISTEP_database_long$visit_numeric[BARISTEP_database_long$visit == "PctWL_V24"] <- 6
+tab1(BARISTEP_database_long$visit_numeric)
+
+PctWL_RepeatedMeasures <- lmer(PctWL ~Treatment_allocation*factor(visit_numeric) + Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg +
+                                 (1|identifier), data = BARISTEP_database_long)
+summary(PctWL_RepeatedMeasures)
+plot_model(PctWL_RepeatedMeasures, type='diag')
+lsmeans(PctWL_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(PctWL_RepeatedMeasures, pairwise~Treatment_allocation|visit_numeric, ddf="Satterthwaite",adjust = "none"))
+
+
+########################################
+###     Sensitivity Analysis         ###
+########################################
+
+#PP Primary outcome
+BARISTEP_database_PP$PctWL_week68 <- ((BARISTEP_database_PP$v2Weightkg - BARISTEP_database_PP$v24WeightKG)/BARISTEP_database_PP$v2Weightkg) *100
+summary(BARISTEP_database_PP$PctWL_week68)
+lm.BARI.Weight.1.PP <- lm(PctWL_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg, data = BARISTEP_database_PP)
+plot(lm.BARI.Weight.1.PP)
+rms::vif(lm.BARI.Weight.1.PP)
+summary(lm.BARI.Weight.1.PP)
+lsmeans(lm.BARI.Weight.1.PP, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.Weight.1.PP, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+#IPW
+BARISTEP_database_ITT$Treatment_allocation_recoded <- 3
+tab1(BARISTEP_database_ITT$Treatment_allocation_recoded)
+BARISTEP_database_ITT$Treatment_allocation_recoded[BARISTEP_database_ITT$Treatment_allocation == "A"] <- 0
+BARISTEP_database_ITT$Treatment_allocation_recoded[BARISTEP_database_ITT$Treatment_allocation == "B"] <- 1
+tab1(BARISTEP_database_ITT$Treatment_allocation_recoded)
+
+ps_model <- glm(as.factor(Treatment_allocation_recoded) ~ Sex + TypeOfSurgery + ScreeningAge + v2Weightkg, family = binomial(), data = BARISTEP_database_ITT)
+summary(ps_model)
+BARISTEP_database_ITT$ps <- predict(ps_model, type = "response") 
+hist(BARISTEP_database_ITT$ps)
+BARISTEP_database_ITT$ipw <- ifelse(BARISTEP_database_ITT$Treatment_allocation_recoded == 1, 1 / BARISTEP_database_ITT$ps, 1 / (1 - BARISTEP_database_ITT$ps))  # Compute weights
+summary(BARISTEP_database_ITT$ipw) 
+hist(BARISTEP_database_ITT$ipw)
+
+#stabilised weights
+p_treat <- mean(BARISTEP_database_ITT$Treatment_allocation_recoded)  # Overall probability of treatment
+BARISTEP_database_ITT$sw <- ifelse(BARISTEP_database_ITT$Treatment_allocation_recoded == 1, p_treat / BARISTEP_database_ITT$ps, (1 - p_treat) / (1 - BARISTEP_database_ITT$ps))
+summary(BARISTEP_database_ITT$sw) 
+hist(BARISTEP_database_ITT$sw)
+lm.BARI.Weight.1.SW <- lm(PctWL_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg, weights = sw, data = BARISTEP_database_ITT)
+plot(lm.BARI.Weight.1.SW)
+summary(lm.BARI.Weight.1.SW)
+lsmeans(lm.BARI.Weight.1.SW, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+
+#Repeated measures
+#Reported in Supplementary Table 2 and 5.
+
+########################################
+###         Other Analyses           ###
+########################################
+
+#GLP1
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = `GLP1-0Minutes`)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = `GLP1-0Minutes`)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=`GLP1-0Minutes`))+
+  geom_histogram(color="black", fill="white", bins = 6)+
+  facet_grid(Treatment_allocation ~ .)
+crosstable(BARISTEP_database, c(`GLP1-0Minutes`), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = Treatment_allocation, y = `GLP1-30minutes`)) +
+  geom_boxplot()
+BARISTEP_database %>%
+  ggplot(mapping = aes(x = `GLP1-30minutes`)) +
+  geom_histogram(bins = 10)
+ggplot(BARISTEP_database, aes(x=`GLP1-30minutes`))+
+  geom_histogram(color="black", fill="white", bins = 6)+
+  facet_grid(Treatment_allocation ~ .)
+crosstable(BARISTEP_database, c(`GLP1-30minutes`), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+#Change in meal-stimulated GLP-1 ~ %WL
+lm.BARI.Weight.1.GLP1 <- lm(PctWL_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + GLP1_baselinechange, data = BARISTEP_database_ITT)
+plot(lm.BARI.Weight.1.GLP1)
+summary(lm.BARI.Weight.1.GLP1)
+
+#Changes in HbA1c between treatment arms in participants with pre-existing pre-diabetes, and in participants with pre-existing T2D.
+
+#HbA1c in participants with pre-existing pre-diabetes.
+BARISTEP_database_PreDiabetes <- BARISTEP_database %>%
+  filter(DiabetesStatusIncPre == "Pre-diabetes")
+crosstable(BARISTEP_database_PreDiabetes, c(HbA1cchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+
+lm.BARI.HbA1c.ITT.prediabetes <- lm(HbA1cchange_week68 ~ Treatment_allocation + TypeOfSurgery + DiabetesStatusIncPre*Treatment_allocation + Sex + v2Weightkg + V2HbA1C, data = BARISTEP_database)
+plot(lm.BARI.HbA1c.ITT.prediabetes)
+summary(lm.BARI.HbA1c.ITT.prediabetes)
+lsmeans(lm.BARI.HbA1c.ITT.prediabetes, pairwise~Treatment_allocation|DiabetesStatusIncPre, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.HbA1c.ITT.prediabetes, pairwise~Treatment_allocation|DiabetesStatusIncPre, ddf="Satterthwaite",adjust = "none"))
+
+#HbA1c in participants with pre-existing T2D. 
+HbA1c_by_Diabetic <- BARISTEP_database %>%
+  filter(Diabetes == "Diabetic")
+crosstable(HbA1c_by_Diabetic, c(HbA1cchange_week68), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1, funs_arg=list(dig=1))
+
+lm.BARI.HbA1c.ITT.diabetes <- lm(HbA1cchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes*Treatment_allocation + Sex + v2Weightkg + V2HbA1C, data = BARISTEP_database)
+plot(lm.BARI.HbA1c.ITT.diabetes)
+summary(lm.BARI.HbA1c.ITT.diabetes)
+lsmeans(lm.BARI.HbA1c.ITT.diabetes, pairwise~Treatment_allocation|Diabetes, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.HbA1c.ITT.diabetes, pairwise~Treatment_allocation|Diabetes, ddf="Satterthwaite",adjust = "none"))
+
+########################################
+###       Exploratory Analyses       ###
+########################################
+
+#Predictors of %WL 
+
+#%WL did not significantly differ with age, ethnicity, diabetes status, sex or type of surgery.
+#B only
+BARISTEP_database_B <- BARISTEP_database %>%
+  filter(Treatment_allocation == "B")
+View(BARISTEP_database_B)
+
+#ScreeningAge, Ethnicity_coded, months_since_surgery, GLP1_baselinechange
+BARISTEP_database %>% 
+  ggplot(mapping = aes(x = GLP1_baselinechange, y = PctWL_week68, group = as.factor(Treatment_allocation), colour =  as.factor(Treatment_allocation))) +
+  geom_smooth() +
+  geom_point()
+
+BARISTEP_database_B %>% 
+  ggplot(mapping = aes(x = ScreeningAge, y = PctWL_week68, group = as.factor(Treatment_allocation), colour =  as.factor(Treatment_allocation))) +
+  geom_smooth() +
+  geom_point()
+BARISTEP_database_B %>% 
+  ggplot(mapping = aes(x = Ethnicity_coded, y = PctWL_week68)) +
+  geom_boxplot()
+crosstable(BARISTEP_database_B, c(PctWL_week68), by =Ethnicity_coded, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+BARISTEP_database_B %>% 
+  ggplot(mapping = aes(x = months_since_surgery, y = PctWL_week68, group = as.factor(Treatment_allocation), colour =  as.factor(Treatment_allocation))) +
+  geom_smooth() +
+  geom_point()
+BARISTEP_database_B %>% 
+  ggplot(mapping = aes(x = GLP1_baselinechange, y = PctWL_week68, group = as.factor(Treatment_allocation), colour =  as.factor(Treatment_allocation))) +
+  geom_smooth() +
+  geom_point()
+
+lm.BARI.Weight.B <- lm(PctWL_week68 ~ TypeOfSurgery + Diabetes + Sex + v2Weightkg + ScreeningAge + as.factor(Ethnicity_coded) + months_since_surgery + GLP1_baselinechange, data = BARISTEP_database_B)
+plot(lm.BARI.Weight.B)
+summary(lm.BARI.Weight.B)
+
+#ScreeningAge
+lm.BARI.Weight.B <- lm(PctWL_week68 ~ TypeOfSurgery + Diabetes + Sex + v2Weightkg + ScreeningAge, data = BARISTEP_database_B)
+plot(lm.BARI.Weight.B)
+summary(lm.BARI.Weight.B)
+
+#Ethnicity_coded
+lm.BARI.Weight.B <- lm(PctWL_week68 ~ TypeOfSurgery + Diabetes + Sex + v2Weightkg + as.factor(Ethnicity_coded), data = BARISTEP_database_B)
+plot(lm.BARI.Weight.B)
+summary(lm.BARI.Weight.B)
+
+#months_since_surgery
+lm.BARI.Weight.B <- lm(PctWL_week68 ~ TypeOfSurgery + Diabetes + Sex + v2Weightkg + months_since_surgery, data = BARISTEP_database_B)
+plot(lm.BARI.Weight.B)
+summary(lm.BARI.Weight.B)
+
+#GLP1 change B only
+lm.BARI.Weight.1.GLP1.B <- lm(PctWL_week68 ~ TypeOfSurgery + Diabetes + Sex + v2Weightkg + GLP1_baselinechange, data = BARISTEP_database_B)
+plot(lm.BARI.Weight.1.GLP1.B)
+summary(lm.BARI.Weight.1.GLP1.B)
+
+#Baseline diabetes status (diabetes vs. no diabetes/pre-diabetes) on %WL induced by Semaglutide 2.4mg. 
+lm.BARI.PctWL.ITT.exploratory <- lm(PctWL_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes*Treatment_allocation + Sex + v2Weightkg, data = BARISTEP_database_ITT)
+summary(lm.BARI.PctWL.ITT.exploratory)
+lsmeans(lm.BARI.PctWL.ITT.exploratory, pairwise~ Diabetes|Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.PctWL.ITT.exploratory, pairwise~Diabetes|Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
+
+lm.BARI.PctWL.ITT.exploratory.B <- lm(PctWL_week68 ~ TypeOfSurgery + Diabetes + Sex + v2Weightkg, data = BARISTEP_database_B)
+plot(lm.BARI.PctWL.ITT.exploratory.B)
+summary(lm.BARI.PctWL.ITT.exploratory.B)
+lsmeans(lm.BARI.PctWL.ITT.exploratory.B, pairwise~ Diabetes, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.PctWL.ITT.exploratory.B, pairwise~Diabetes, ddf="Satterthwaite",adjust = "none"))
+
+#PR/WR predict %WL
+BARISTEP_database_B %>% 
+  ggplot(mapping = aes(x = as.factor(PctWL_postsurgery_Over20), y = PctWL_week68)) +
+  geom_boxplot()
+ggplot(BARISTEP_database_B, aes(x=PctWL_week68))+
+  geom_histogram(color="black", fill="white", bins = 8)+
+  facet_grid(as.factor(PctWL_postsurgery_Over20) ~ .)
+
+crosstable(BARISTEP_database_B, c(PctWL_week68), by =PctWL_postsurgery_Over20, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
+
+lm.BARI.Weight.B.WRPR <- lm(PctWL_week68 ~ TypeOfSurgery + Diabetes + Sex + v2Weightkg + PctWL_postsurgery_Over20, data = BARISTEP_database_B)
+plot(lm.BARI.Weight.B.WRPR)
+summary(lm.BARI.Weight.B.WRPR)
+lsmeans(lm.BARI.Weight.B.WRPR, pairwise~ as.factor(PctWL_postsurgery_Over20), ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.Weight.B.WRPR, pairwise~as.factor(PctWL_postsurgery_Over20), ddf="Satterthwaite",adjust = "none"))
+
+BARISTEP_database_B %>%
+  ggplot(mapping = aes(x = MaxPercentWeightLossPostSurgery_computed, y = PctWL_week68)) +
+  geom_point() +
+  geom_smooth()
+
+lm.BARI.Weight.B.PreWL <- lm(PctWL_week68 ~ TypeOfSurgery + Diabetes + Sex + v2Weightkg + MaxPercentWeightLossPostSurgery_computed + PctWL_postsurgery_Over20, data = BARISTEP_database_B)
+plot(lm.BARI.Weight.B.PreWL)
+summary(lm.BARI.Weight.B.PreWL)
+
