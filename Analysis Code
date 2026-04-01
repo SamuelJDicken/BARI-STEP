@@ -2,42 +2,41 @@
 
 #https://github.com/SamuelJDicken/BARI-STEP
 
-library(car)
-library(epiDisplay)
-library(rlang)
-library(writexl)
-library(tidyverse)
-library(dplyr)
-library(readxl)
-library(haven)
-library(dvmisc)
-library(crosstable)
-library(gmodels)
-library(lubridate)
-library(lme4)
-library(nlme)
-library(parameters)
-library(lmerTest)
-library(emmeans)
-library(knitr)
-library(broom.mixed)
-library(mitml)
-library(ipw) 
-library(miceadds) 
-library(tidyr)
+#R Version 2024.12.1+563 (2024.12.1+563)
+library(car) #3.1-2
+library(epiDisplay) #3.5.0.2
+library(rlang) #1.1.6
+library(writexl) #1.5.3
+library(tidyverse) #2.0.0
+library(dplyr) #1.1.4
+library(readxl) #1.4.3
+library(haven) #2.5.4
+library(dvmisc) #1.1.4
+library(crosstable) #0.7.0
+library(gmodels) #2.19.1
+library(lubridate) #1.9.3
+library(lme4) #1.1-37
+library(nlme) #3.1-166
+library(parameters) #0.28.3
+library(lmerTest) #3.1-3
+library(emmeans) #1.10.6
+library(knitr) #1.50
+library(broom.mixed) #0.2.9.6
+library(mitml) #0.4-5
+library(ipw) #1.2.1
+library(tidyr) #1.3.1
 library(riskdiff)
-library(geepack)
-library(sjPlot)
-library(ggplot2)
-library(performance)
-library(easystats)
-library(fmsb)
-library(epitools)
-library(riskdiff)
-library(logisticRR)
-library(logbin)
-library(sandwich)
-library(boot)
+library(sjPlot) #2.8.17
+library(ggplot2) #4.0.2
+library(performance) #0.16.0
+library(easystats) #0.7.5
+library(fmsb) #0.7.6
+library(epitools) #0.5-10.1
+library(riskdiff) #0.2.1
+library(logisticRR) #0.3.0
+library(logbin) #2.0.6
+library(sandwich) #3.1-1
+library(boot) #1.3-32
 
 ####################
 ####################
@@ -416,7 +415,7 @@ ggplot(BARISTEP_database, aes(x=DBPchange_week68))+
   geom_histogram(color="black", fill="white", bins = 10)+
   facet_grid(Treatment_allocation ~ .)
 
-lm.BARI.DBP.ITT <- lm(SBPchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2DiastolicBloodPressure, data = BARISTEP_database)
+lm.BARI.DBP.ITT <- lm(DBPchange_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg + v2DiastolicBloodPressure, data = BARISTEP_database)
 summary(lm.BARI.DBP.ITT)
 plot(lm.BARI.DBP.ITT)
 rms::vif(lm.BARI.DBP.ITT)
@@ -1053,7 +1052,7 @@ ggplot(BARISTEP_database_ITT, aes(x=V2HbA1C))+
 crosstable(BARISTEP_database_ITT, c(V2HbA1C), by =Treatment_allocation, total="both", percent_pattern="{n} ({p_col})", percent_digits=1)
 
 #Change in meal-stimulated GLP-1
-BARISTEP_database_ITT$GLP1_baselinechange <- (BARISTEP_database_ITT$`GLP1-0Minutes` - BARISTEP_database_ITT$`GLP1-30minutes`)
+BARISTEP_database_ITT$GLP1_baselinechange <- (BARISTEP_database_ITT$`GLP1-30Minutes` - BARISTEP_database_ITT$`GLP1-0minutes`)
 
 BARISTEP_database_ITT %>% 
   ggplot(mapping = aes(x = Treatment_allocation, y = GLP1_baselinechange)) +
