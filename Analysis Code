@@ -1772,29 +1772,41 @@ lsmeans(lm.BARI.Weight.1.PP, pairwise~Treatment_allocation, ddf="Satterthwaite",
 confint(lsmeans(lm.BARI.Weight.1.PP, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
 
 #IPW
-BARISTEP_database_ITT$Treatment_allocation_recoded <- 3
-tab1(BARISTEP_database_ITT$Treatment_allocation_recoded)
-BARISTEP_database_ITT$Treatment_allocation_recoded[BARISTEP_database_ITT$Treatment_allocation == "A"] <- 0
-BARISTEP_database_ITT$Treatment_allocation_recoded[BARISTEP_database_ITT$Treatment_allocation == "B"] <- 1
-tab1(BARISTEP_database_ITT$Treatment_allocation_recoded)
+BARISTEP_database$Treatment_allocation_recoded <- 3
+tab1(BARISTEP_database$Treatment_allocation_recoded)
+BARISTEP_database$Treatment_allocation_recoded[BARISTEP_database$Treatment_allocation == "A"] <- 0
+BARISTEP_database$Treatment_allocation_recoded[BARISTEP_database$Treatment_allocation == "B"] <- 1
+tab1(BARISTEP_database$Treatment_allocation_recoded)
 
-ps_model <- glm(as.factor(Treatment_allocation_recoded) ~ Sex + TypeOfSurgery + ScreeningAge + v2Weightkg, family = binomial(), data = BARISTEP_database_ITT)
+BARISTEP_database$Outcome_observed <- 0
+BARISTEP_database$Outcome_observed[!is.na(BARISTEP_database$PctWL_week68)] <- 1
+tab1(BARISTEP_database$Outcome_observed)
+BARISTEP_database$Outcome_observed <- as.numeric(BARISTEP_database$Outcome_observed)
+
+ps_model <- glm(Outcome_observed ~ Treatment_allocation + ScreeningAge + v2Weightkg, family = binomial(), data = BARISTEP_database)
 summary(ps_model)
-BARISTEP_database_ITT$ps <- predict(ps_model, type = "response") 
-hist(BARISTEP_database_ITT$ps)
-BARISTEP_database_ITT$ipw <- ifelse(BARISTEP_database_ITT$Treatment_allocation_recoded == 1, 1 / BARISTEP_database_ITT$ps, 1 / (1 - BARISTEP_database_ITT$ps))  # Compute weights
-summary(BARISTEP_database_ITT$ipw) 
-hist(BARISTEP_database_ITT$ipw)
+BARISTEP_database$ps <- predict(ps_model, type = "response") 
+BARISTEP_database$ipw <- ifelse(BARISTEP_database$Outcome_observed == 1, 1 / BARISTEP_database$ps, NA)  # Compute weights
+summary(BARISTEP_database$ipw) 
+hist(BARISTEP_database$ipw)
+lm.BARI.Weight.1.IPW <- lm(PctWL_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg, weights = ipw, data = BARISTEP_database)
+plot(lm.BARI.Weight.1.IPW)
+summary(lm.BARI.Weight.1.IPW)
+emmeans(lm.BARI.Weight.1.IPW, "Treatment_allocation")
+lsmeans(lm.BARI.Weight.1.IPW, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.Weight.1.IPW, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
 
 #stabilised weights
-p_treat <- mean(BARISTEP_database_ITT$Treatment_allocation_recoded)  # Overall probability of treatment
-BARISTEP_database_ITT$sw <- ifelse(BARISTEP_database_ITT$Treatment_allocation_recoded == 1, p_treat / BARISTEP_database_ITT$ps, (1 - p_treat) / (1 - BARISTEP_database_ITT$ps))
-summary(BARISTEP_database_ITT$sw) 
-hist(BARISTEP_database_ITT$sw)
-lm.BARI.Weight.1.SW <- lm(PctWL_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg, weights = sw, data = BARISTEP_database_ITT)
+p_treat <- mean(BARISTEP_database$Outcome_observed)  # Overall probability of observed outcome observed
+BARISTEP_database$sw <- ifelse(BARISTEP_database$Outcome_observed == 1, p_treat / BARISTEP_database$ps, NA)
+summary(BARISTEP_database$sw) 
+hist(BARISTEP_database$sw)
+lm.BARI.Weight.1.SW <- lm(PctWL_week68 ~ Treatment_allocation + TypeOfSurgery + Diabetes + Sex + v2Weightkg, weights = sw, data = BARISTEP_database)
 plot(lm.BARI.Weight.1.SW)
 summary(lm.BARI.Weight.1.SW)
+emmeans(lm.BARI.Weight.1.SW, "Treatment_allocation")
 lsmeans(lm.BARI.Weight.1.SW, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none")
+confint(lsmeans(lm.BARI.Weight.1.SW, pairwise~Treatment_allocation, ddf="Satterthwaite",adjust = "none"))
 
 #Repeated measures
 #Reported in Supplementary Table 2 and 5.
